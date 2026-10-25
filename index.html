@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TrustLayer · The Agent That Earns Trust</title>
+<style>
+:root{--bg:#0b0f14;--p:#121821;--b:#243041;--t:#e6edf5;--m:#8b9bb0;--ok:#2ecc8f;--no:#ff5c6c;--wn:#f5b942;--ac:#6ea8ff}
+@media(prefers-color-scheme:light){:root{--bg:#f5f7fa;--p:#fff;--b:#d5dce6;--t:#13202e;--m:#566678;--ok:#0a9a62;--no:#d62f43;--wn:#b87800;--ac:#1d5fd1}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:15px/1.55 system-ui,sans-serif;padding:20px;max-width:1000px;margin:auto}
+h1{font-size:24px;margin:0}h2{font-size:15px;margin:0 0 8px;color:var(--m);text-transform:uppercase;letter-spacing:.05em}.sub{color:var(--m);margin:4px 0 16px}
+nav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}button{background:var(--p);color:var(--t);border:1px solid var(--b);border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
+button:hover,button.on{border-color:var(--ac)}button.on{color:var(--ac)}.g{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:760px){.g{grid-template-columns:1fr}}
+.c{background:var(--p);border:1px solid var(--b);border-radius:12px;padding:14px;margin-bottom:14px}code,.mono{font:12px ui-monospace,monospace;color:var(--m);word-break:break-all}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.st{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--b)}.st b{min-width:18px}.ok{color:var(--ok)}.no{color:var(--no)}.wn{color:var(--wn)}
+.dec{font-weight:700;font-size:17px;padding:8px 12px;border-radius:8px;margin-top:8px;border:1px solid}.dec.ok{border-color:var(--ok)}.dec.no{border-color:var(--no)}.dec.wn{border-color:var(--wn)}
+.sec{display:none}.sec.on{display:block}.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media(max-width:760px){.flow{grid-template-columns:1fr 1fr}}
+.flow div{border:1px solid var(--ac);border-radius:10px;padding:10px;font-size:13px}.flow b{color:var(--ac);display:block}input[type=range]{width:100%}details{margin-top:6px}summary{cursor:pointer;color:var(--m)}pre{white-space:pre-wrap;word-break:break-all;font:11px ui-monospace,monospace;margin:6px 0}
+</style></head><body>
+<h1>TrustLayer</h1><div class="sub">Identity → claims → verification → policy. Every check below is a real ECDSA P-256 signature verified in your browser.</div>
+<nav><button class="on" data-t="demo">Trust-gated demo</button><button data-t="arch">Architecture</button><button data-t="thesis">Two-year thesis</button><button data-t="notes">Notes</button></nav>
+
+<section class="sec on" id="demo">
+<div class="c"><h2>Scenario</h2>Atlas, a buyer agent working for a human, is asked to <b>pay an invoice</b> by a vendor agent. Atlas only pays when the counterparty proves identity, holds a credential from a trusted issuer, has verifiable history, <i>and</i> the amount is inside the authority its own human delegated.</div>
+<div class="g"><div>
+<div class="c"><h2>Run a request</h2><div class="row"><button data-s="0">✅ Honest vendor · 120 BHD</button><button data-s="1">💸 Over-limit · 900 BHD</button></div>
+<h2 style="margin-top:12px">Attacks</h2><div class="row"><button data-s="2">🎭 Spoofed identity</button><button data-s="3">🪪 Self-issued credential</button><button data-s="4">✂️ Tampered credential</button></div>
+<div class="row"><button id="all">▶ Run all</button></div></div>
+<div class="c"><h2>Grant · scope · revoke</h2><div>Human’s spending cap for Atlas: <b id="capv"></b> BHD</div><input type="range" id="cap" min="100" max="1000" step="50"><div class="small mono">Moving the slider makes the human sign a new delegation credential.</div>
+<div class="row"><button id="rev">Revoke Meridian’s credential</button></div></div>
+<div class="c"><h2>Trust profiles</h2><div id="prof"></div></div></div>
+<div><div class="c"><h2>Decision trace</h2><div id="out" class="mono">Pick a request →</div></div></div></div></section>
+
+<section class="sec" id="arch"><div class="c"><h2>Architecture snapshot</h2><div class="flow">
+<div><b>1 · Identity</b>Each agent holds a P-256 key; its identifier is a <code>did:key</code> built from the public key (multicodec 0x1200). No registry needed to know who signed.</div>
+<div><b>2 · Claims</b>W3C-VC-style credentials: issuer, subject, type, claim, expiry, proof. Types: VerifiedVendor (registry), Delegation (human → agent, with scope and cap), signed action receipts.</div>
+<div><b>3 · Verification</b>Fresh-nonce challenge (possession) → credential signature → trusted issuer → expiry → signed revocation list → hash-chained history check.</div>
+<div><b>4 · Policy</b>Verifier-owned rules turn evidence into ACCEPT, REFUSE or ESCALATE. No score: every decision cites the checks that produced it.</div></div>
+<p>Trust is <b>granted</b> by issuing a signed credential, <b>scoped</b> by narrowing its claim (the cap slider), and <b>revoked</b> by the registry publishing a signed revocation list.</p>
+<p><b>Failure test.</b> Mallory tries three things: replaying Meridian’s real credential (fails possession proof: she cannot sign the nonce), issuing herself a credential (fails trusted-issuer check), and editing a copy of Meridian’s credential (fails signature check). Each fails at a different layer, so the defence is not a single point.</p></div></section>
+
+<section class="sec" id="thesis"><div class="c"><h2>Two-year thesis · agent identity and reputation</h2>
+<p>By 2028 most commerce between organisations will be negotiated by software acting for people. Three things must exist or it collapses into spam and fraud: identity an agent can prove, authority that is scoped and revocable, and a record others can verify without asking the agent’s owner.</p>
+<p><b>Identity</b> will be cryptographic and cheap. Every agent holds a key and a DID; names, logos and model brands will mean nothing. Possession of a key means everything, so every interaction opens with a challenge.</p>
+<p><b>Authority</b> will flow as delegation chains (human → organisation → agent → sub-agent), each hop a signed credential that can only narrow scope: amount, time, counterparty, action. Verifiers check the chain, not a profile page. Revocation must be as fast as issuance, because an agent doing 10,000 tasks a day can do 10,000 wrong things before anyone reads an email.</p>
+<p><b>Reputation</b> will stop being a number. A score is a rumour; signed receipts counter-signed by counterparties and anchored in hash-chained logs are evidence. Each verifier applies its own policy to the same evidence, so a payments agent and a research agent can trust one vendor differently.</p>
+<p>The hard problems are sybils and issuers. Fresh keys are free, so new agents start with zero authority and earn it through human-backed delegations and vouches that put the voucher’s own standing at stake. Trust anchors will be plural and competing, like certificate authorities, with transparency logs to expose bad issuers.</p>
+<p>Whoever standardises the claims vocabulary, the revocation path and the policy language, built on DIDs and Verifiable Credentials, becomes the TLS of the agent economy.</p></div></section>
+
+<section class="sec" id="notes"><div class="c"><h2>Notes</h2>
+<p><b>Built with:</b> Claude for design and code; WebCrypto (ECDSA P-256, SHA-256); no libraries, one file.</p>
+<p><b>Key decisions:</b> real signatures over canonical JSON; possession challenge so stolen credentials are useless; verifier-side policy instead of a global score; hash-chained signed action log as reputation evidence; extends did:key and the VC data model (simplified, not JSON-LD or Data Integrity proofs).</p>
+<p><b>Out of scope:</b> DID resolution beyond an in-page key cache, network transport between agents, sybil resistance at scale, privacy-preserving (selective disclosure) credentials, persistent storage. All keys are regenerated on each page load.</p></div></section>
+
+<script>
+const $=s=>document.querySelector(s),enc=new TextEncoder(),A58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz',KEYS={},ALG={name:'ECDSA',hash:'SHA-256'};
+const canon=o=>o&&typeof o=='object'?Array.isArray(o)?'['+o.map(canon)+']':'{'+Object.keys(o).sort().map(k=>JSON.stringify(k)+':'+canon(o[k]))+'}':JSON.stringify(o);
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0)),sh=d=>d.slice(0,18)+'…'+d.slice(-6);
+const b58=b=>{let n=0n,s='';for(const x of b)n=n*256n+BigInt(x);while(n>0n){s=A58[Number(n%58n)]+s;n/=58n}return s};
+const sign=async(k,o)=>b64(await crypto.subtle.sign(ALG,k,enc.encode(canon(o))));
+const vfy=async(d,o,s)=>{const k=KEYS[d];if(!k)return false;try{return await crypto.subtle.verify(ALG,k,ub(s),enc.encode(canon(o)))}catch{return false}};
+const sha=async o=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(canon(o))))].map(x=>x.toString(16).padStart(2,'0')).join('');
+const rid=()=>'urn:vc:'+[...crypto.getRandomValues(new Uint8Array(5))].map(x=>x.toString(16).padStart(2,'0')).join('');
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let S={};
+async function mk(n){const k=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']),r=new Uint8Array(await crypto.subtle.exportKey('raw',k.publicKey)),c=new Uint8Array(35);c.set([0x80,0x24,r[64]&1?3:2]);c.set(r.slice(1,33),3);const did='did:key:z'+b58(c);KEYS[did]=k.publicKey;return{n,did,priv:k.privateKey}}
+async function issue(i,sub,type,claim){const vc={id:rid(),type,issuer:i.did,subject:sub,claim,exp:Date.now()+3e10};return{vc,proof:await sign(i.priv,vc)}}
+async function setRev(ids){const body={issuer:S.R.did,revoked:ids};S.rev={body,proof:await sign(S.R.priv,body)}}
+async function mkLog(a,items){const L=[];let prev='genesis';for(const it of items){const e={agent:a.did,seq:L.length,prev,...it},s=await sign(a.priv,e);L.push({e,s});prev=await sha({e,s})}return L}
+async function chk(L,d){let prev='genesis';for(const{e,s}of L){if(e.prev!==prev||e.agent!==d||!await vfy(d,e,s))return false;prev=await sha({e,s})}return L.length>0}
+async function setDeleg(cap){S.cap=cap;S.deleg=await issue(S.H,S.At.did,'Delegation',{scope:'pay-invoice',maxAmount:cap,currency:'BHD'})}
+async function init(){const[R,H,At,Me,Ma]=await Promise.all(['Bahrain Agent Registry','Human principal','Atlas (buyer)','Meridian Supplies (vendor)','Mallory (attacker)'].map(mk));S={R,H,At,Me,Ma,anchors:[R.did]};
+S.vcMe=await issue(R,Me.did,'VerifiedVendor',{category:'office-supplies'});S.logMe=await mkLog(Me,[{act:'delivered PO-114',amt:80},{act:'delivered PO-131',amt:210},{act:'delivered PO-152',amt:45}]);await setRev([]);await setDeleg(500);S.revoked=false;prof();
+$('#cap').value=500;$('#capv').textContent=500}
+function prof(){const m=S.revoked?'<span class=no>revoked</span>':'<span class=ok>valid</span>';$('#prof').innerHTML=`<div><b>${S.Me.n}</b><div class=mono>${sh(S.Me.did)}</div>• VerifiedVendor from Registry: ${m}<br>• ${S.logMe.length} signed, hash-chained actions</div><br><div><b>${S.At.n}</b><div class=mono>${sh(S.At.did)}</div>• Delegation from human: pay-invoice ≤ ${S.cap} BHD</div><br><div><b>${S.Ma.n}</b><div class=mono>${sh(S.Ma.did)}</div>• no credentials, no history</div><details><summary>Raw credential (Meridian)</summary><pre>${esc(JSON.stringify(S.vcMe,null,1))}</pre></details>`}
+async function gate(sc){const T=[],at=S.At;const add=(ok,l,d)=>{T.push({ok,l,d});return ok},{vc}=sc,sub=vc.vc.subject;
+const fin=(r,why)=>({T,r,why});const ch={nonce:b64(crypto.getRandomValues(new Uint8Array(12))),aud:at.did};
+if(!add(await vfy(sub,ch,await sign(sc.signer.priv,ch)),'Proof of key possession',`Fresh nonce must be signed by the key behind ${sh(sub)}`))return fin('REFUSE','Presenter does not hold the key named in the credential.');
+if(!add(await vfy(vc.vc.issuer,vc.vc,vc.proof),'Credential signature','Issuer’s signature over the exact credential contents'))return fin('REFUSE','Credential contents were altered after signing.');
+if(!add(S.anchors.includes(vc.vc.issuer),'Trusted issuer','Issuer must be a trust anchor of this verifier'))return fin('REFUSE','Issuer is not trusted by Atlas’s policy.');
+if(!add(vc.vc.type=='VerifiedVendor'&&vc.vc.exp>Date.now(),'Type and expiry','VerifiedVendor, not expired'))return fin('REFUSE','Wrong credential type or expired.');
+const rv=await vfy(S.R.did,S.rev.body,S.rev.proof)&&S.rev.body.revoked.includes(vc.vc.id);
+if(!add(!rv,'Revocation list','Registry-signed list checked for this credential id'))return fin('REFUSE','Credential has been revoked.');
+const n=sc.log.length;if(!add(await chk(sc.log,sub),'Action history',`${n} receipts: each signed by the agent and chained by hash`))return fin('REFUSE','No verifiable track record.');
+const d=S.deleg,cap=d.vc.claim.maxAmount,ok=await vfy(S.H.did,d.vc,d.proof)&&sc.amount<=cap;
+if(!add(ok,'Own authority',`Human delegation: ≤ ${cap} BHD. Requested: ${sc.amount} BHD`))return fin('ESCALATE',`Counterparty is trusted, but ${sc.amount} BHD exceeds the delegated cap. Asking the human.`);
+return fin('ACCEPT','All checks passed, so Atlas pays within delegated authority.')}
+const SC=[async()=>({t:'Honest vendor, 120 BHD',signer:S.Me,vc:S.vcMe,log:S.logMe,amount:120}),async()=>({t:'Over-limit, 900 BHD',signer:S.Me,vc:S.vcMe,log:S.logMe,amount:900}),
+async()=>({t:'Spoofed: Mallory replays Meridian’s credential',signer:S.Ma,vc:S.vcMe,log:S.logMe,amount:120}),
+async()=>({t:'Self-issued: Mallory certifies herself',signer:S.Ma,vc:await issue(S.Ma,S.Ma.did,'VerifiedVendor',{category:'office-supplies'}),log:S.logMe,amount:120}),
+async()=>{const v=JSON.parse(JSON.stringify(S.vcMe));v.vc.subject=S.Ma.did;return{t:'Tampered: Mallory edits Meridian’s credential',signer:S.Ma,vc:v,log:S.logMe,amount:120}}];
+async function run(i,keep){const sc=await SC[i](),g=await gate(sc),cls={ACCEPT:'ok',REFUSE:'no',ESCALATE:'wn'}[g.r];
+const h=`<div style="margin-bottom:16px"><b style="font-family:system-ui;font-size:14px">${esc(sc.t)}</b>${g.T.map(s=>`<div class=st><b class="${s.ok?'ok':'no'}">${s.ok?'✓':'✗'}</b><div><span style="color:var(--t)">${esc(s.l)}</span><br>${esc(s.d)}</div></div>`).join('')}<div class="dec ${cls}">${g.r}: ${esc(g.why)}</div></div>`;
+$('#out').innerHTML=(keep?$('#out').innerHTML:'')+h}
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.t){document.querySelectorAll('nav button,.sec').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#'+b.dataset.t).classList.add('on')}
+if(b.dataset.s)run(+b.dataset.s,false);if(b.id=='all'){$('#out').innerHTML='';for(let i=0;i<5;i++)await run(i,true)}
+if(b.id=='rev'){S.revoked=!S.revoked;await setRev(S.revoked?[S.vcMe.vc.id]:[]);b.textContent=S.revoked?'Restore Meridian’s credential':'Revoke Meridian’s credential';prof();run(0,false)}});
+$('#cap').addEventListener('change',async e=>{await setDeleg(+e.target.value);prof();run(1,false)});$('#cap').addEventListener('input',e=>$('#capv').textContent=e.target.value);
+init().catch(e=>{$('#out').textContent='WebCrypto needs https or localhost: '+e})
+</script></body></html>
